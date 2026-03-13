@@ -6,11 +6,13 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface ApiService {
-    // La que ya tenías (Ejercicio 1)
     @GET("/")
     fun getStatus(): Call<ApiResponse>
 
-    // La NUEVA para el Ejercicio 2
     @POST("/register")
     fun registerUser(@Body request: RegisterRequest): Call<RegisterResponse>
+
+    // LA NUEVA RUTA PARA EL LOGIN
+    @POST("/login")
+    fun loginUser(@Body request: LoginRequest): Call<LoginResponse>
 }

@@ -1,5 +1,7 @@
 package com.example.tareano3
 
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -10,7 +12,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import android.graphics.Color
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,13 +19,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Enlazamos los elementos visuales de tu XML
         val etUsername = findViewById<EditText>(R.id.etUsername)
         val etPassword = findViewById<EditText>(R.id.etPassword)
-        val btnRegister = findViewById<Button>(R.id.btnRegister)
+        val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvMessage = findViewById<TextView>(R.id.tvMessage)
 
-        // 2. Configuramos Retrofit con la IP de tu compu
+        // Usamos la IP de tu computadora que configuramos antes
         val retrofit = Retrofit.Builder()
             .baseUrl("http://192.168.1.76:5000")
             .addConverterFactory(GsonConverterFactory.create())
@@ -32,44 +32,55 @@ class MainActivity : AppCompatActivity() {
 
         val apiService = retrofit.create(ApiService::class.java)
 
-        // 3. Configuramos qué pasa al hacer clic en el botón
-        btnRegister.setOnClickListener {
+        btnLogin.setOnClickListener {
             val user = etUsername.text.toString().trim()
             val pass = etPassword.text.toString().trim()
 
-            // Verificamos que no envíen campos vacíos
             if (user.isEmpty() || pass.isEmpty()) {
-                tvMessage.text = "Por favor, llena ambos campos"
+                tvMessage.text = "Llena ambos campos"
                 tvMessage.setTextColor(Color.RED)
                 return@setOnClickListener
             }
 
-            tvMessage.text = "Registrando..."
+            tvMessage.text = "Iniciando sesión..."
             tvMessage.setTextColor(Color.GRAY)
 
-            // Empaquetamos los datos
-            val request = RegisterRequest(user, pass)
+            // Empaquetamos la petición de Login
+            val request = LoginRequest(user, pass)
 
-            // Hacemos la petición POST a /register
-            apiService.registerUser(request).enqueue(object : Callback<RegisterResponse> {
-                override fun onResponse(call: Call<RegisterResponse>, response: Response<RegisterResponse>) {
+            apiService.loginUser(request).enqueue(object : Callback<LoginResponse> {
+                override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                     if (response.isSuccessful) {
-                        // Caso exitoso (Código 200 o 201)
-                        tvMessage.text = response.body()?.message ?: "Registro exitoso"
-                        tvMessage.setTextColor(Color.rgb(0, 150, 0)) // Verde oscuro
+                        // ¡LOGIN EXITOSO!
+                        // Creamos el Intent para viajar a WelcomeActivity
+                        val intent = Intent(this@MainActivity, WelcomeActivity::class.java)
+                        // Le metemos el nombre de usuario a la maleta del viaje
+                        intent.putExtra("USERNAME", user)
+                        // Arrancamos el viaje
+                        startActivity(intent)
+
+                        // Limpiamos el mensaje por si el usuario regresa atrás
+                        tvMessage.text = ""
                     } else {
-                        // Caso de error (ej. código 400 porque el usuario ya existe)
-                        tvMessage.text = "Error: El usuario ya existe"
+                        // LOGIN FALLIDO (contraseña incorrecta o usuario no existe)
+                        tvMessage.text = "Error: Credenciales incorrectas"
                         tvMessage.setTextColor(Color.RED)
                     }
                 }
 
-                override fun onFailure(call: Call<RegisterResponse>, t: Throwable) {
-                    // Error de red (Docker apagado, cambio de IP, etc.)
+                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                     tvMessage.text = "Error de conexión: ${t.message}"
                     tvMessage.setTextColor(Color.RED)
                 }
             })
+        }
+
+        val btnGoToRegister = findViewById<Button>(R.id.btnGoToRegister)
+
+        btnGoToRegister.setOnClickListener {
+            // Viajamos a la pantalla de Registro
+            val intent = Intent(this@MainActivity, RegisterActivity::class.java)
+            startActivity(intent)
         }
     }
 }
